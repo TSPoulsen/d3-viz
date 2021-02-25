@@ -130,3 +130,4 @@ dmypy.json
 
 #Large embedding file
 /word_emb/glove.twitter.27B.100d.txt
+/word_emb/embedding.txt
