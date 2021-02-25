@@ -127,3 +127,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+#Large embedding file
+/word_emb/glove.twitter.27B.100d.txt
