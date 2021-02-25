@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+    <title>Death cases visual</title>
+</head>
+<style>
+#container {
+  display: flex;                  /* establish flex container */
+  flex-direction: row;            /* default value; can be omitted */
+  flex-wrap: nowrap;              /* default value; can be omitted */
+  justify-content: space-between; /* switched from default (flex-start, see below) */
+}
+</style>
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+
+<!-- Create a div where the graph will take place -->
+<div id="container">
+    <div id="my_dataviz"></div>
+    <div id="country_selection">
+        <select multiple id="menu" size=50></select>
+        <button id="select_button">Select</button>
+    </div>
+    
+    <script src=smooth.js></script>
+</div>
+
+
+
+
