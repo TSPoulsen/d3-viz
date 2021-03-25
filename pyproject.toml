@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "d3-viz"
+version = "0.1.0"
+description = "Tools for parsing data to visualize in D3"
+authors = ["Tim Sehested Poulsen"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "3.9.2"
+pandas = "^1.2.3"
+numpy = "^1.20.1"
+matplotlib = "^3.3.4"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
