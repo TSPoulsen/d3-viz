@@ -131,3 +131,4 @@ dmypy.json
 #Large embedding file
 /word_emb/glove.twitter.27B.100d.txt
 /word_emb/embedding.txt
+global_temp/high_temps_summary.json
