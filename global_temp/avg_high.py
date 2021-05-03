@@ -36,9 +36,11 @@ df.iloc[:,5] = df.iloc[:,5].astype(float) + base_high
 years = np.unique(df.iloc[:,1])
 
 
-summary = {}
+
+lines = []
 # DF SUMMARY PROCESSING #
 for y in years:
+    tmp = {}
     mask = df["Year"] == y
     q1 =  df[mask].iloc[:,5].quantile(q=0.25)
     median = df[mask].iloc[:,5].quantile(q=0.5)
@@ -46,18 +48,25 @@ for y in years:
     interQrange = q3 - q1
     minb = max(min(df[mask].iloc[:,5]),q1-1.5*interQrange)
     maxb = min(max(df[mask].iloc[:,5]),q3+1.5*interQrange)
-    summary[y] = {}
-    summary[y]['boxq'] = [minb,q1,median,q3,maxb]
+    tmp["year"] = y
+    tmp["min"] = minb
+    tmp["q1"] = q1
+    tmp["median"] = median
+    tmp["q3"] = q3
+    tmp["max"] = maxb
     minmask = df[mask].iloc[:,5] < minb
     maxmask = df[mask].iloc[:,5] > maxb
     mino = list(df[mask][minmask].iloc[:,5])
     maxo = list(df[mask][maxmask].iloc[:,5])
-    if mino: summary[y]['mino'] = mino
-    if maxo: summary[y]['maxo'] = maxo
+    outliers = mino + maxo
+    if outliers: tmp['outliers'] = outliers
+    lines.append(tmp)
 
 
-with open("high_temps_summary.json","w") as of:
-    json.dump(summary,of,indent=2)
+    
+of = open("high_temps_summary.json","w")
+json.dump(lines,of)
+of.close()
 
 
 
