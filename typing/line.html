@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+    <title>Typist Progression Line Chart</title>
+</head>
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+
+<style>
+    .axis {
+        stroke: none;
+        fill: none;
+        opacity: 0.5;
+    }
+    .curlyBrace {
+			stroke: black;
+			stroke-width: 3px;
+			fill: none;
+            opacity: 0.7;
+    }
+    .line {
+        stroke:black;  /* #ebc766 */
+        stroke-width: 1.5px;
+        fill: none;
+    }
+
+    .stop-center {
+        stop-color: black;
+        stop-opacity: 0.5;
+    }
+    .stop-side1 {
+        stop-color: black;
+        stop-opacity: 0.4;
+    }
+    .stop-side2 {
+        stop-color: black;
+        stop-opacity: 0;
+    }
+    .stop-top {
+        stop-color:#f5dc99;
+        stop-opacity: 0;
+    }
+    .stop-middle {
+        stop-color:#f5dc99;
+        stop-opacity: 1;
+
+    }
+    .stop-bottom {
+        stop-color:#f5dc99;
+        stop-opacity: 1;
+    }
+    .filled {
+        fill: url(#gradient);
+    }
+    .nightfiller {
+        fill: url(#nightgradient);
+    }
+
+</style>
+<!-- Create a div where the graph will take place -->
+<div id="viz" class='left_div'></div>
+<script>
+
+function makeCurlyBrace(x1,y1,x2,y2,w,q)
+{
+    //Calculate unit vector
+    var dx = x1-x2;
+    var dy = y1-y2;
+    var len = Math.sqrt(dx*dx + dy*dy);
+    dx = dx / len;
+    dy = dy / len;
+
+    //Calculate Control Points of path,
+    var qx1 = x1 + q*w*dy;
+    var qy1 = y1 - q*w*dx;
+    var qx2 = (x1 - .25*len*dx) + (1-q)*w*dy;
+    var qy2 = (y1 - .25*len*dy) - (1-q)*w*dx;
+    var tx1 = (x1 -  .5*len*dx) + w*dy;
+    var ty1 = (y1 -  .5*len*dy) - w*dx;
+    var qx3 = x2 + q*w*dy;
+    var qy3 = y2 - q*w*dx;
+    var qx4 = (x1 - .75*len*dx) + (1-q)*w*dy;
+    var qy4 = (y1 - .75*len*dy) - (1-q)*w*dx;
+
+return ( "M " +  x1 + " " +  y1 +
+        " Q " + qx1 + " " + qy1 + " " + qx2 + " " + qy2 + 
+        " T " + tx1 + " " + ty1 +
+        " M " +  x2 + " " +  y2 +
+        " Q " + qx3 + " " + qy3 + " " + qx4 + " " + qy4 + 
+        " T " + tx1 + " " + ty1 );
+}
+d3.csv('https://raw.githubusercontent.com/TimSP98/Data/main/typing_progress.csv', function(data){
+data = data.slice(0,16);
+function roundToTwo(num) {
+    return +(Math.round(num + "e+2")  + "e-2");
+}
+var dateParse = d3.timeParse('%d/%m/%Y');
+var max_correct = 0;
+function parsing(obj) {
+    obj.wrong_key = Number(obj.wrong_key);
+    obj.right_key = Number(obj.right_key);
+    max_correct = Math.max(max_correct,obj.right_key);
+    obj.WPM = Number(obj.WPM)
+    obj.raw_date = obj.date+'/2021'
+    obj.date = dateParse(obj.raw_date);
+    let rate = roundToTwo((obj.wrong_key*100)/(obj.wrong_key + obj.right_key));
+    obj.error_rate = rate;
+}
+for(obj of data){
+    parsing(obj);
+}
+console.log(data);
+
+var margin  = {top: 60, right: 200, bottom:90, left: 100};
+var width   = 1500 - margin.left - margin.right;
+var height  = 600 - margin.top - margin.bottom;
+
+var root = d3.select('#viz')
+    .append('svg')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', height + margin.top + margin.bottom);
+var svgDefs = root.append('defs');
+var nightgradient = svgDefs.append('linearGradient')
+    .attr('id','nightgradient')
+    .attr('x1',0)
+    .attr('y1',0)
+    .attr('x2',1)
+    .attr('y2',0)
+nightgradient.append('stop')
+    .attr('class','stop-side2')
+    .attr('offset',0)
+nightgradient.append('stop')
+    .attr('class','stop-side1')
+    .attr('offset',0.2)
+nightgradient.append('stop')
+    .attr('class','stop-center')
+    .attr('offset',0.4)
+nightgradient.append('stop')
+    .attr('class','stop-center')
+    .attr('offset',0.6)
+nightgradient.append('stop')
+    .attr('class','stop-side1')
+    .attr('offset',0.8)
+nightgradient.append('stop')
+    .attr('class','stop-side2')
+    .attr('offset',1)
+
+var gradient1 = svgDefs.append('linearGradient')
+    .attr('id','gradient')
+    .attr('x1',0)
+    .attr('y1',0)
+    .attr('x2',0)
+    .attr('y2',1);
+
+gradient1.append('stop')
+    .attr('class', 'stop-top')
+    .attr('offset', 0)
+
+gradient1.append('stop')
+    .attr('class', 'stop-middle')
+    .attr('offset', 0.5)
+
+gradient1.append('stop')
+    .attr('class', 'stop-bottom')
+    .attr('offset', 1)
+
+svg = root.append('g')
+    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+var y = d3.scaleLinear()
+    .domain([0,max_correct+0.1*max_correct])
+    .range([height,0]);
+
+var x = d3.scaleTime()
+    .domain([dateParse('29/3/2021'),dateParse('4/4/2021')])
+    .range([0,width]);
+    
+svg.append("g")
+    .attr('transform','translate(-5,0)')
+    .call(d3.axisLeft(y).ticks(5).tickSize(0))
+    .select('.domain').remove()
+
+svg.append("g")
+    .attr('class','axis')
+    .call(d3.axisLeft(y).ticks(5).tickFormat(""))
+
+svg.append("g")
+    .attr("transform","translate(0,"+(height+5)+")")
+    .call(d3.axisBottom(x).ticks(7).tickSize(0).tickFormat(d3.timeFormat("%a")))
+    .select('.domain').remove()
+
+svg.append("g")
+    .attr("transform","translate(0,"+height+")")
+    .attr('class','axis')
+    .call(d3.axisBottom(x).ticks(7).tickFormat(""))
+
+
+var curr_date = data[0].raw_date, all_dots = [];
+var q = [];
+for(let obj of data){
+    if(obj.raw_date != curr_date){
+        create_subplot(q,curr_date);
+        q = [];
+        curr_date = obj.raw_date;
+    }
+    q.push(obj);
+}
+create_subplot(q,curr_date);
+function create_subplot(q,date){
+    console.log(date);
+    const funnel_col = '#487ea1';
+    let miny = 20000;
+    for(let i=0;i<q.length;i++){
+        q[i].index = i;
+        miny = Math.min(miny,q[i].right_key);
+    }
+    // generate funnel
+    let funnel = [];
+    let N_points = 1000, tmp_y, tmp_x, step;
+    for(let i=0;i<N_points;i++){
+        tmp_y = i*((miny)/N_points);
+        tmp_x = 0.7*(q.length-1)/(1+Math.exp(-(i-500)/100));
+        funnel.push({x:tmp_x,y:tmp_y});
+    }
+    tmp_x = funnel[funnel.length-1].x;
+    tmp_y = funnel[funnel.length-1].y;
+    let inside = [...funnel]
+    for(let i=0;i<300;i++){
+        inside.push({x:tmp_x,y:tmp_y+i});
+    }
+
+    let fade = [],
+        baseDate = q[0].date,
+        sub_width = 100,
+        basey = funnel[funnel.length-1].y;
+
+    let x_sub = d3.scaleLinear()
+        .domain([0,q.length-1])
+        .range([0,sub_width])
+    svg.append('g')
+        .attr('transform','translate('+(x(baseDate)-0.5*sub_width)+','+(y(1000))+')')
+        .call(d3.axisBottom(x_sub))
+        .style('opacity',0)
+
+    let x_left = x(baseDate)-x_sub(funnel[funnel.length-1].x),
+        x_right = x(baseDate)+x_sub(funnel[funnel.length-1].x);
+    // Right funnel
+    svg.append('path')
+        .datum(funnel)
+        .attr('fill','none')
+        .attr('stroke','none')
+        .attr('stroke-width',1.5)
+        .attr('d',d3.line().x(function(d) { return x(baseDate)+x_sub(d.x)}).y(function(d) {return y(d.y)}))
+    // Left Funnel
+    svg.append('path')
+        .datum(funnel)
+        .attr('fill','none')
+        .attr('stroke','none')
+        .attr('stroke-width',1.5)
+        .attr('d',d3.line()
+            .x(function(d) { return x(baseDate)-x_sub(d.x)})
+            .y(function(d) {return y(d.y)}))
+
+    svg.append('path')
+        .datum(inside)
+        .classed('filled',true)
+        .attr('d',d3.area()
+            .x0(function(d) {return x(baseDate)+x_sub(d.x)})
+            .x1(function(d) {return x(baseDate)-x_sub(d.x)})
+            .y0(function(d) {return y(d.y)})
+            .y1(function(d) {return y(d.y)}))
+
+
+    svg.append('g')
+        .selectAll('dot')
+        .data(q)
+        .enter()
+        .append('circle')
+        .attr('cx',function(d) {return x(d.date)+x_sub(d.index)-0.5*sub_width})
+        .attr('cy',function(d) {return y(d.right_key)})
+        .attr('r',5)
+    
+    svg.append('path')
+        .datum(q)
+        .attr('fill','none')
+        .attr('class','line')
+        .attr('d',d3.line()
+            .x(function(d) {return x(d.date)+x_sub(d.index)-0.5*sub_width})
+            .y(function(d) {return y(d.right_key)}))
+    for(d of q){
+        tmpx = x(d.date)+x_sub(d.index)-0.5*sub_width;
+        tmpy = y(d.right_key);
+        all_dots.push({x:tmpx,y:tmpy});
+    }
+}
+//svg.append('path')
+ //   .datum(all_dots)
+//    .attr('fill','none')
+//    .attr('stroke','#2f719c')
+//    .attr('stroke-width',2)
+//    .attr('d',d3.line()
+//        .x(function(d) {return d.x})
+//        .y(function(d) {return d.y}))
+
+let p1 = all_dots[0], p2 = all_dots[all_dots.length-1];
+svg.append('text')
+    .attr('transform','translate('+(p1.x-25)+','+(p1.y+3)+')')
+    .style('font','10px bold')
+    .style('font-weight','bold')
+    .style('text-anchor','middle')
+    .text(data[0].right_key)
+    
+svg.append('text')
+    .attr('transform','translate('+(p2.x+40)+','+(p1.y+3)+')')
+    .style('font','10px bold')
+    .style('font-weight','bold')
+    .style('text-anchor','middle')
+    .text(data[0].right_key)
+
+
+svg.append('text')
+    .attr('transform','translate('+(p2.x+40)+','+(p2.y+3)+')')
+    .style('font','10px bold')
+    .style('font-weight','bold')
+    .style('text-anchor','middle')
+    .text(data[data.length-1].right_key)
+
+svg.append('text')
+    .attr('transform','translate(-50,'+height/2+')rotate(-90)')
+    .style('font','15px')
+    .style('font-weight','bold')
+    .style('text-anchor','middle')
+    .text('Correct key-presses in 10 mins of typing*')
+
+svg.append('text')
+    .attr('transform','translate('+width/2+',0)')
+    .style('font','15px bold')
+    .style('font-weight','bold')
+    .style('text-anchor','middle')
+    .text('The first week of typing progression')
+
+svg.append('text')
+    .attr('transform','translate('+(width-60)+','+(height+50)+')')
+    .style('font','10px bold')
+    .style('text-anchor','left')
+    .text('2021 Week 13')
+svg.append('text')
+    .attr('transform','translate('+(width-60)+','+(height+70)+')')
+    .style('font','10px bold')
+    .style('text-anchor','left')
+    .text('*Measured on 10fastfingers.com')
+
+svg.append('path')
+    .data([{x1:width-90,y1:p1.y,x2:width-90,y2:p2.y}])
+    .attr('class','curlyBrace')
+    .attr('d', function(d) { return makeCurlyBrace(d.x1,d.y1,d.x2,d.y2,50,0.6); });
+
+svg.append('text')
+    .attr('transform','translate('+(width+20)+','+(p2.y+((p1.y-p2.y)/2)+5)+')')
+    .style('text-anchor','middle')
+    .style('stroke','black')
+    .style('opacity',0.7)
+    .text('72% Increase')
+/*
+svg.append('g')
+    .selectAll('dot')
+    .data(data)
+    .enter()
+    .append('circle')
+    .attr('cx',function(d) { return x(d.date)})
+    .attr('cy',function(d) { return y(d.right_key)})
+    .attr('r',5)
+
+*/
+});
+
+</script>

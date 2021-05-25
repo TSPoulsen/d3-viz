@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+.axis path {
+  fill: none;
+  stroke: none;
+}
+</style>
+<head>
+    <title>Typist Progression Grid</title>
+</head>
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+
+<!-- Create a div where the graph will take place -->
+<div id="viz"></div>
+    
+<script>
+d3.csv('https://raw.githubusercontent.com/TimSP98/Data/main/typing_progress.csv', function(data){
+console.log(data);
+
+function roundToTwo(num) {
+    return +(Math.round(num + "e+2")  + "e-2");
+}
+var dateParse = d3.timeParse('%d/%m')
+function parsing(obj) {
+    obj.wrong_key = Number(obj.wrong_key);
+    obj.right_key = Number(obj.right_key);
+    obj.WPM = Number(obj.WPM)
+    obj.date = dateParse(obj.date);
+    let rate = roundToTwo((obj.wrong_key*100)/(obj.wrong_key + obj.right_key));
+    obj.error_rate = rate;
+}
+for(obj of data){
+    parsing(obj);
+}
+console.log(data);
+
+var margin  = {top: 60, right: 60, bottom:60, left: 60};
+var width   = 600 - margin.left - margin.right;
+var height  = 600 - margin.top - margin.bottom;
+
+var svg = d3.select('#viz')
+    .append('svg')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', height + margin.top + margin.bottom)
+    .append('g')
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+var y = d3.scaleLinear()
+    .domain([0,8])
+    .range([height,0]);
+
+var x = d3.scaleLinear()
+    .domain([20,60])
+    .range([0,width]);
+
+var opa = d3.scaleLinear()
+    .domain([data[0].date,data[data.length-1].date])
+    .range([0.5,1]);
+    
+
+var extra_grid = 20;
+// Y-gridlines
+svg.append("g")
+    .attr("transform","translate("+(-extra_grid)+",0)")
+    .attr("class","axis")
+    .call(d3.axisLeft(y).ticks(16).tickSize(-width-2*extra_grid).tickFormat(""))
+    .style("opacity",0.5)
+
+// Y-axis text
+svg.append("g")
+    .attr("transform","translate("+(width+extra_grid)+",0)")
+    .attr("class","axis")
+    .call(d3.axisRight(y).ticks(16).tickSize(0))
+// X-gridlines
+svg.append("g")
+    .attr("transform","translate(0,"+(height+extra_grid)+")")
+    .attr("class","axis")
+    .call(d3.axisBottom(x).ticks(16).tickSize(-height-2*extra_grid).tickFormat(""))
+    .style("opacity",0.5)
+
+// X-axis text
+svg.append("g")
+    .call(d3.axisBottom(x).ticks(16).tickSize(0))
+    .attr("class","axis")
+    .selectAll("text")
+        .attr("transform","translate(0,"+(height+extra_grid)+")")
+
+svg.append('g')
+    .selectAll('dot')
+    .data(data)
+    .enter()
+    .append('circle')
+    .attr('cx',function(d) { return x(d.WPM)})
+    .attr('cy',function(d) { return y(d.error_rate)})
+    .attr('r',8)
+    .attr('fill','red')
+    .style('opacity',function(d) { return opa(d.date)})
+});
+
+</script>
+
+
+
+
